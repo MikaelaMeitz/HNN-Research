@@ -8,3 +8,11 @@ This repository was create for the purpose of sharing code, data, and any docume
 Please email meitzmikaela@gmail.com if there are errors, comments, questions, or concerns. 
 
 Thank you. 
+
+
+Ref: 
+[1] Gupta, Lipi. “Analytic and Machine Learning Methods for Controlling Nonlinearities in Particle Accelerators.” PhD diss. University of Chicago, 2021.
+
+[2] S. Greydanus, A. Sosanya. Dissipative Hamiltonian Neural Networks: Learning Dissipative and Conservative Dynamics Separately. arXiv preprint arXiv:2201.10085, 2022.
+
+[3] S. Greydanus, M. Dzamba, J. Yosinski. Hamiltonian Neural Networks. arXiv preprint arXiv:1906.01563, 2019.
