@@ -5,6 +5,8 @@ Author: Mikaela Meitz
 Disclaimer:
 This repository was create for the purpose of sharing code, data, and any documents relating to this research for personal use. Please advise that this repository and any item within it is a work in progress. All documents and code in this repository are living documents and are continuously updated. 
 
+This research is being conducted to satisfy the culminating activity requirement for the CSU, Long Beach (CA, USA) Applied Mathematics Masters program as a graduate student research assistant at the Lawerence Berkeley National Laboratory, CA, USA. Anticipated graduation in Spring 2023. 
+
 Please email meitzmikaela@gmail.com if there are errors, comments, questions, or concerns. 
 
 Thank you. 
