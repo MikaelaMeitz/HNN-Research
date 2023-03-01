@@ -1,3 +1,5 @@
+#Code adapted from:  S. Greydanus, M. Dzamba, J. Yosinski. Hamiltonian Neural Networks. arXiv preprint arXiv:1906.01563, 2019.
+
 import sys
 sys.path.append('..')
 import numpy as np
@@ -66,7 +68,7 @@ def main(MAJOR_FOLDER, FILE):
     verbose = False
 
     #main for loop for all experiments 
-    for i in range(20, 400): #change from range(len(data))
+    for i in range(20, 100): #change from range(len(data))
        
         scale_amp = get_scale(dist, i)
         all_trials = {}
@@ -277,60 +279,59 @@ def main(MAJOR_FOLDER, FILE):
                                      
                 with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Experiment.{0}.pkl".format(str(i).zfill(3))), 'wb') as f:
                     pickle.dump(all_trials, f)
-                    
-            #plot the average MSE for each experiment 
-            FILES = glob.glob(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/",MAJOR_FOLDER,'Experiment.*.pkl'), recursive=True)
-            FILES.sort()
-            all_data = {}
-            
-            for file in FILES:
-                i = file.split(".")[-2]
-                with open(file ,'rb') as read_file:
-                    trials = pickle.load(read_file)
-                all_data[i] = trials
-                
-            for i in all_data:
-                available_js = all_data[i].keys()
-    
-                tpad = 7
-                fig, axs = plt.subplots(2,figsize=[10,10], dpi=300)
-    
-                js = list(all_data[i].keys())
-    
-                hnn_MSE = []
-                dhnn_MSE = []
-                mlp_MSE = []
-    
-                for j in available_js:  #this one
-                    #print(j)
-                    mse_hnn = (np.mean(all_data[str(i)][str(j)]["hnn"]["MSE"]))
-                    hnn_MSE.append(mse_hnn)
-                    mse_dhnn = (np.mean(all_data[str(i)][str(j)]["dhnn"]["MSE"]))
-                    dhnn_MSE.append(mse_dhnn)
-                    mse_mlp = np.mean(all_data[str(i)][str(j)]["mlp"]["MSE"])                      
-                    mlp_MSE.append(mse_mlp)
-        
-                #plot
-                #plt.subplot(1,2,1)
-                fig.suptitle('Average MSE for Experiment %s' % i)
-                axs[1].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
-                axs[1].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
-                axs[1].plot(js, mlp_MSE, '*r-', label='MLP', markersize = 8)
-                plt.legend(fontsize=7, bbox_to_anchor=(0,0))
-                #without MLP
-                #plt.subplot(1,2,2) 
-                axs[0].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
-                axs[0].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
-    
-    
-                for ax in axs.flat:
-                    ax.set(xlabel='Trajectory Number', ylabel='Average MSE')
-                
-                
-                trial_path = "Trial{0}".format(str(j).zfill(3))
-                plt.savefig(os.path.join(new_experiment_path, "Average_MSE_Fig.png"))
-                plt.close()
-             
+
+                #plot the average MSE for each experiment 
+                FILES = glob.glob(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/",MAJOR_FOLDER,'Experiment.*.pkl'), recursive=True)
+                FILES.sort()
+                all_data = {}
+
+                for file in FILES:
+                    i = file.split(".")[-2]
+                    with open(file ,'rb') as read_file:
+                            rials = pickle.load(read_file)
+                    all_data[i] = trials
+
+                for i in all_data:
+                    available_js = all_data[i].keys()
+
+                    tpad = 7
+                    fig, axs = plt.subplots(2,figsize=[10,10], dpi=300)
+
+                    js = list(all_data[i].keys())
+
+                    hnn_MSE = []
+                    dhnn_MSE = []
+                    mlp_MSE = []
+
+                    for j in available_js:  
+                        mse_hnn = (np.mean(all_data[str(i)][str(j)]["hnn"]["MSE"]))
+                        hnn_MSE.append(mse_hnn)
+                        mse_dhnn = (np.mean(all_data[str(i)][str(j)]["dhnn"]["MSE"]))
+                        dhnn_MSE.append(mse_dhnn)
+                        mse_mlp = np.mean(all_data[str(i)][str(j)]["mlp"]["MSE"])                      
+                        mlp_MSE.append(mse_mlp)
+
+                    #plot
+                    #plt.subplot(1,2,1)
+                    fig.suptitle('Average MSE for Experiment %s' % i)
+                    axs[1].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                    axs[1].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+                    axs[1].plot(js, mlp_MSE, '*r-', label='MLP', markersize = 8)
+                    plt.legend(fontsize=7, bbox_to_anchor=(0,0))
+                    #without MLP
+                    #plt.subplot(1,2,2) 
+                    axs[0].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                    axs[0].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+
+
+                    for ax in axs.flat:
+                        ax.set(xlabel='Trajectory Number', ylabel='Average MSE')
+
+
+                    trial_path = "Trial{0}".format(str(j).zfill(3))
+                    plt.savefig(os.path.join(new_experiment_path, "Average_MSE_Fig.png"))
+                    plt.close()
+
                 
     end = time.time()
     print("Time to complete: %s minutes" % ((end-main_start_time)/60), flush = True)
@@ -338,7 +339,7 @@ def main(MAJOR_FOLDER, FILE):
 if __name__ == '__main__':
     print("START", flush = True)
     FILE = 'Trajectories400.hdf5'
-    MAJOR_FOLDER = "02242023"                           
+    MAJOR_FOLDER = "03012023"                           
     main(MAJOR_FOLDER, FILE)
     print("DONE!!!", flush = True)
     
