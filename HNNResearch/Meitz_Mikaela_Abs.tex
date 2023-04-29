@@ -1,0 +1,102 @@
+% Please not use any packages not already included, nor any user defined macros.% That is, expand out and of your macros where they occur using commands that
+%  work in this template without modifying the preamble.
+
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,eucal}
+\usepackage{fancyhdr}
+\usepackage{url}
+\RequirePackage[pdftex]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor = blue,
+    urlcolor  = blue,
+    citecolor = blue,
+    anchorcolor = blue,
+}
+
+\textwidth 150mm
+\hoffset -12mm
+
+\pagestyle{fancy}
+\headsep = 15mm
+\parindent0pt
+\begin{document}
+% \rhead{{\small The First CSU Mathematical Conference \\ California State University, Northridge \\ November 11--12, 2022, Northridge, California}}
+
+
+
+\begin{center}
+  {\Large
+    {\bf
+    Hamiltonian Neural Network Exploration for Electron Particle Tracking
+    }
+  }
+  
+  \medskip
+  
+  {\bf
+    Mikaela Meitz\textsuperscript{1*}, Lipi Gupta\textsuperscript{2}
+  }
+  
+  \smallskip
+
+  {
+    \textsuperscript{1}Department of  Mathematics and Statistics, \\
+    California State University, Long Beach (CSULB) \\
+    1250 Bellflower Blvd, Long Beach, CA 90840, USA \\
+    \href{mailto:mikaela.meitz01@student.csulb.edu}{mikaela.meitz01@student.csulb.edu} 
+    
+    % \url{www.linkedin.com/in/mikaela-meitz-6787b7181}\\
+    
+    \smallskip
+    
+    \textsuperscript{2}Lawrence Berkeley National Laboratory \\
+    1 Cyclotron Rd, Berkeley, CA 94720, USA \\
+    % put lipi email and link if she wants 
+    \href{mailto:lipigupta@lbl.gov}{lipigupta@lbl.gov}
+
+  }
+\end{center}
+
+\medskip
+
+{\bf Key Words:} Hamiltonian Mechanics, neural network, machine learning, python, particle accelerator, light sources, particle tracking 
+
+\medskip
+In the field of accelerator physics, there is a burgeoning interest in using machine learning methods for aiding in the design and optimization of charged particle accelerators. The Advance Light Sources (ALS) at the Lawrence Berkeley National Laboratory is a periodic circular accelerator called a synchrotron that emits ultraviolet and soft x-ray beams by accelerating electron bunches nearly as fast as the speed of light. These accelerators are prone to beam instability resulting in particle loss and consequently creating less x-ray brightness. The stability of an electron over thousands of revolutions is important to the performance of the accelerator. During these machines' design or upgrade process, electron particle tracking is needed to ensure the particle dynamics are sufficient for the intended scientific use, but can be computationally expensive. If the dynamic aperture, the stability region of phase space in the synchrotron, is too small, then adjustments are made and the process is repeated until the desired result is achieved. Optimizing the dynamic aperture can require doing this tracking several times while iterating the accelerator design. Machine learning methods may alleviate some of the need for these expensive computations by making particle integration faster and easier to parallelize. This research explores electron particle tracking with the use of Hamiltonian Neural Networks. Machine learning based Hamiltonian Neural Networks (HNN) constrains the model learning to obey Hamiltonian mechanics so that the neural network can learn conservation laws from data [3]. We compare the performance of HNN to other machine learning based models [2]. 
+
+% Resources for this research were provided by the Department of Energy and the National Energy Research Scientific Computing Center.  
+
+% These machines can accelerate charged particles for use in collisions for fundamental science research, as well as for the creation of radiation for diffraction imaging used in chemistry, biology, material science, and history research. 
+
+% Dissipative Hamiltonian Neural Networks (D-HNN) can separate dissipative effects such as friction and conserved quantities such as energy. The multilayer perceptron (MLP) is a classical type of feed forward neural network. We compare the performance of HNN to that of a D-HNN and MLP. 
+%They may also give insight on how to retain as many particles as possible to create the brightest light source within a particle accelerator.
+
+%increase the efficiency in predictions of a particle's trajectory and optimize the use of resources that are used in particle tracking.
+\medskip
+
+{\bf References}
+
+\smallskip
+
+[1] Gupta, Lipi. “Analytic and Machine Learning Methods for Controlling Nonlinearities in Particle Accelerators.” PhD diss. University of Chicago, 2021.
+
+
+\medskip
+
+[2] S. Greydanus, A. Sosanya. Dissipative Hamiltonian Neural Networks: Learning Dissipative and Conservative Dynamics Separately. arXiv preprint arXiv:2201.10085, 2022.
+
+
+\medskip
+
+[3] S. Greydanus, M. Dzamba, J. Yosinski. Hamiltonian Neural Networks. arXiv preprint arXiv:1906.01563, 2019.
+
+\end{document}
+    
+    
+
+
+    
+        
+  
+        
