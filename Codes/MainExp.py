@@ -26,7 +26,7 @@ from models import MLP, DHNN, HNN
 from train import  get_args, train 
 
 #added by Mikaela Meitz:
-from Meitz_utils import get_AMP, get_scale, find_amp_index, integrate_model, get_true_pred
+from Meitz_utils import get_AMP, get_scale, find_amp_index, integrate_model, get_true_pred 
 
 
 def load_data(file):   
@@ -57,8 +57,12 @@ def get_data(state, args, j, i, save_path=None):
     return data
 
 def main(MAJOR_FOLDER, FILE):
+    
     main_start_time = time.time()
-
+    main_times = [] #store all times for all experiments 
+    training_time = [] #store training times for all experiments
+    training_js = [] #store training index times for all experiments
+        
     data = load_data(FILE)
 
     #calculate all amplitudes in data array
@@ -67,17 +71,27 @@ def main(MAJOR_FOLDER, FILE):
 
     verbose = False
 
-    #main for loop for all experiments 
-    for i in range(20, 100): #change from range(len(data))
+    #main for loop for "all experiments"
+    traj_list = [20,50,75,100,125,129,130,135,141,150,200,249,250,298,300]
+    
+    for i in range(20,25): #change from range(len(data)) 
        
         scale_amp = get_scale(dist, i)
         all_trials = {}
-
+        
+        experiment_start_time = time.time()
+        experiment_time = [] #store experiment times for all experiments
+        experiment_is = [] #store experiment index times for all experiments
+        
+        integration_times = [] #store integration times for each trial 
+        MSE_times = [] #store MSE times for each trial 
+         
         #choose new array with scaled amplitudes
-        perc=[0.8, 0.9, 1, 1.1, 1.2]
+        perc=[0.9, 0.95, 1.0, 1.05, 1.10]
         amp_index = []
-        amp_index = find_amp_index(scale_amp, perc)
-        print(amp_index, flush = True)
+        amp_perc = []
+        amp_index, amp_perc = find_amp_index(scale_amp, i)
+        print(amp_index, amp_perc, flush = True)
 
         #make individual folders for each experiment 
         if len(amp_index) > 1: #only make experiment folders for arrays with more than one amplitude
@@ -104,7 +118,9 @@ def main(MAJOR_FOLDER, FILE):
                 model_save_path = os.path.join(new_experiment_path, trial_path, "models/")
                 os.makedirs(model_save_path, exist_ok = True)
 
-                # start_time = time.time()
+                #start training time
+                training_start_time = time.time()
+                
                 if j == i:
                     data_train = main_dict[j]
                     [f(args.seed) for f in [np.random.seed, torch.manual_seed, torch.cuda.manual_seed_all]]
@@ -121,12 +137,13 @@ def main(MAJOR_FOLDER, FILE):
                     torch.save(mlp_model.state_dict(), os.path.join(model_save_path, "MLP.pkl"))
                     torch.save(hnn_model.state_dict(), os.path.join(model_save_path, "HNN.pkl"))
                     torch.save(dhnn_model.state_dict(), os.path.join(model_save_path, "DHNN.pkl"))
+                    
+                    training_time.append((time.time() - training_start_time)/60)
+                    training_js.append(j)
+                    print("--- %d minutes --- for traning" % ((time.time() - training_start_time)/60))
+            #out of training loop 
 
-                    # DHNN_model.save(os.path.join(experiment_path, trial_path, "models/", "DHNN.pkl"))
-
-                    # print("--- %s seconds --- for traning" % (time.time() - start_time))
-
-           #data anylysis on all trajectories 
+            #data anylysis on each trajectory 
             for j in amp_index: 
                 test_time = []
                 test_x = []
@@ -141,29 +158,37 @@ def main(MAJOR_FOLDER, FILE):
                 x0 = test_x[0] #0
                 true_x = test_x  #reserved test data 
 
+                #start integration time
+                integration_start_time = time.time()
+                
                 # integrate along baseline vector field
-                integrate_time = time.time()
+                #mlp_model = MLP(args.input_dim, args.output_dim, args.hidden_dim) 
                 mlp_path = integrate_model(mlp_model, t_span, x0, t_eval=t_eval)
                 mlp_x = mlp_path['y'].T
 
                 # integrate along HNN vector field
+                #hnn_model = HNN(args.input_dim, args.hidden_dim)
                 hnn_path = integrate_model(hnn_model, t_span, x0, t_eval=t_eval)
                 hnn_x = hnn_path['y'].T
 
                 # integrate along D-HNN vector field
+                #dhnn_model = DHNN(args.input_dim, args.hidden_dim)
                 dhnn_path = integrate_model(dhnn_model, t_span, x0, t_eval=t_eval)
                 dhnn_x = dhnn_path['y'].T
-
-                # print("--- %s seconds --- for integration" % (time.time() - integrate_time))
+        
+                integration_times.append((time.time() - integration_start_time)/60)
+                print("--- %d minutes --- for integration" % ((time.time() - integration_start_time)/60))
+                
 
                 #Calculate the average distance 
                 data_true = pd.DataFrame(true_x)
-                # MSE_time = time.time()
+                
+                #start mse time
+                MSE_start_time= time.time()
 
                 #HNN average distance of each point from truth
-                #np.savetxt('hnn_x.csv', hnn_x[:,:], delimiter=',')
                 data_pred = pd.DataFrame(hnn_x)
-                HNN_pred, HNN_index, HNN_MSE = get_true_pred(data_true, data_pred) #HNN_pred = distances, HNN_index = coordinates
+                HNN_pred, HNN_index, HNN_MSE = get_true_pred(data_true, data_pred) 
                 HNN_pred2 = np.mean(HNN_pred)
 
                 #DHNN average distance of each point from truth
@@ -176,8 +201,9 @@ def main(MAJOR_FOLDER, FILE):
                 MLP_pred, MLP_index, MLP_MSE = get_true_pred(data_true, data_pred)
                 MLP_pred2 = np.mean(MLP_pred)
 
-                #print("--- %s seconds --- for MSE calculation" % (time.time() - MSE_time))
-
+                MSE_times.append((time.time() - MSE_start_time)/60)
+                print("--- %d minutes --- for MSE calculation" % ((time.time() - MSE_start_time)/60))
+                
                 if verbose == True:
                     print('Average distance between TRUE pts and the closest prediction pts(not consecutive)', flush = True)
                     print('HNN =',HNN_pred2 , flush = True) 
@@ -217,30 +243,29 @@ def main(MAJOR_FOLDER, FILE):
                     #print (q,p)
                     return H
 
-                #plotting
+                #plotting w/MLP
                 tpad = 7
-
-                fig = plt.figure(figsize=[20,15], dpi=300)
+                fig = plt.figure(figsize=[9,3], dpi=300)
+                
+                #plt predictions 
                 plt.subplot(1,3,1)
                 plt.title('Predictions on %s' % j, pad=tpad) ; plt.xlabel('$x$') ; plt.ylabel('$p_x$')
-                plt.plot(true_x[:,0], true_x[:,1], 'k.', label='Ground truth', markersize = 3)
-                # plt.plot(mlp_x[:,0], mlp_x[:,1], 'r.', label='MLP', markersize = 3)
-                plt.plot(hnn_x[:,0], hnn_x[:,1], 'g.', label='HNN', markersize =3)
-                plt.plot(dhnn_x[:,0], dhnn_x[:,1], 'b.', label='D-HNN', markersize = 3)
-                # plt.xlim(-1,1) ; plt.ylim(-1,1)
-                plt.legend(fontsize=7, loc='lower right')
-
+                plt.plot(true_x[:,0], true_x[:,1], 'ks', label='Ground truth', markersize = 2)
+                plt.plot(hnn_x[:,0], hnn_x[:,1], 'go', label='HNN', markersize =2)
+                plt.plot(dhnn_x[:,0], dhnn_x[:,1], 'b^', label='D-HNN', markersize = 2, alpha=0.4)
+                plt.plot(mlp_x[:,0], mlp_x[:,1], 'r*', label='MLP', markersize = 3, alpha=0.2)
+                plt.legend(fontsize=7, loc='upper left')
+                           
+                #plot MSE 
                 plt.subplot(1,3,2)
-                #Plt MSE 
-                plt.title('MSE on %s' % j)
+                plt.title('SE on %s' % j)
                 plt.xlabel('Time step') 
-                plt.plot(HNN_MSE, 'g-',label ='HNN MSE', linewidth=0.75)
-                plt.plot(DHNN_MSE, 'b-',label ='DHNN MSE', linewidth=0.75)
-                # plt.plot(MLP_MSE, 'r-',label = 'MLP MSE', linewidth=0.75)
-                plt.legend(fontsize=7, loc='lower right')
-                # print(HNN_MSE)
-                plt.legend(fontsize=7)
+                plt.plot(HNN_MSE, 'g--',label ='HNN SE', linewidth=0.75, markersize = 2)
+                plt.plot(DHNN_MSE, 'b:',label ='DHNN SE', linewidth=0.75, markersize = 2, alpha=0.4)
+                plt.plot(MLP_MSE, 'r-.',label = 'MLP SE', linewidth=0.75, markersize = 2, alpha=0.2)
+                plt.legend(fontsize=7, loc='upper left')
 
+                #plot total energy 
                 plt.subplot(1,3,3)
                 plt.title('Total energy on %s' % j, pad=tpad)
                 plt.xlabel('Time step')
@@ -248,11 +273,52 @@ def main(MAJOR_FOLDER, FILE):
                 mlp_e = np.stack([hamiltonian_fn(c) for c in mlp_x])
                 hnn_e = np.stack([hamiltonian_fn(c) for c in hnn_x])
                 dhnn_e = np.stack([hamiltonian_fn(c) for c in dhnn_x])
-                plt.plot(t_eval, true_e, 'k-', label='Ground truth', linewidth=1)
-                # plt.plot(t_eval, mlp_e, 'r-', label='MLP', linewidth=1)
-                plt.plot(t_eval, hnn_e, 'g-', label='HNN', linewidth=1)
-                plt.plot(t_eval, dhnn_e, 'b-', label='D-HNN', linewidth=1)
-                plt.legend(fontsize=7, loc='lower right')
+                plt.plot(t_eval, true_e, 'k-', label='Ground truth', linewidth=1, markersize = 2)
+                plt.plot(t_eval, hnn_e, 'g--', label='HNN', linewidth=1, markersize = 2)
+                plt.plot(t_eval, dhnn_e, 'b:', label='D-HNN', linewidth=1, markersize = 2, alpha=0.4)
+                plt.plot(t_eval, mlp_e, 'r-.', label='MLP', linewidth=1, markersize = 2, alpha=0.2)
+                plt.legend(fontsize=7, loc='upper left')
+
+                plt.tight_layout() 
+
+                #save figures 
+                trial_path = "Trial{0}".format(str(j).zfill(3))
+                plt.savefig(os.path.join(new_experiment_path, trial_path, "Trial{0}_Figures_W_MLP.png".format(str(j).zfill(3))))
+                plt.close()
+                
+                #NEW plotting NO MLP
+                tpad = 7
+                fig = plt.figure(figsize=[9,3], dpi=300)
+                
+                #plt predictions 
+                plt.subplot(1,3,1)
+                plt.title('Predictions on %s' % j, pad=tpad) ; plt.xlabel('$x$') ; plt.ylabel('$p_x$')
+                plt.plot(true_x[:,0], true_x[:,1], 'ks', label='Ground truth', markersize = 2)
+                plt.plot(hnn_x[:,0], hnn_x[:,1], 'go', label='HNN', markersize =2)
+                plt.plot(dhnn_x[:,0], dhnn_x[:,1], 'b^', label='D-HNN', markersize = 2, alpha=0.4)
+                plt.legend(fontsize=7, loc='upper left')
+
+                #plot MSE 
+                plt.subplot(1,3,2)
+                plt.title('SE on %s' % j)
+                plt.xlabel('Time step') 
+                plt.plot(HNN_MSE, 'g--',label ='HNN SE', linewidth=0.75, markersize = 2)
+                plt.plot(DHNN_MSE, 'b:',label ='DHNN SE', linewidth=0.75, markersize = 2, alpha=0.4)
+                plt.legend(fontsize=7, loc='upper left')
+
+                #plot total energy
+                plt.subplot(1,3,3)
+                plt.title('Total energy on %s' % j, pad=tpad)
+                plt.xlabel('Time step')
+                true_e = np.stack([hamiltonian_fn(c) for c in true_x])
+                mlp_e = np.stack([hamiltonian_fn(c) for c in mlp_x])
+                hnn_e = np.stack([hamiltonian_fn(c) for c in hnn_x])
+                dhnn_e = np.stack([hamiltonian_fn(c) for c in dhnn_x])
+                plt.plot(t_eval, true_e, 'k-', label='Ground truth', linewidth=1, markersize = 2)
+                plt.plot(t_eval, hnn_e, 'g--', label='HNN', linewidth=1, markersize = 2)
+                plt.plot(t_eval, dhnn_e, 'b:', label='D-HNN', linewidth=1, markersize = 2, alpha=0.4)
+                plt.legend(fontsize=7, loc='upper left')
+                
 
                 plt.tight_layout() 
 
@@ -260,86 +326,218 @@ def main(MAJOR_FOLDER, FILE):
                 trial_path = "Trial{0}".format(str(j).zfill(3))
                 plt.savefig(os.path.join(new_experiment_path, trial_path, "Trial{0}_Figures.png".format(str(j).zfill(3))))
                 plt.close()
+                
+                
+                #NEW plotting NO MLP or DHNN
+                tpad = 7
+                fig = plt.figure(figsize=[9,3], dpi=300)
+                
+                #plt predictions 
+                plt.subplot(1,3,1)
+                plt.title('Predictions on %s' % j, pad=tpad) ; plt.xlabel('$x$') ; plt.ylabel('$p_x$')
+                plt.plot(true_x[:,0], true_x[:,1], 'ks', label='Ground truth', markersize = 2)
+                plt.plot(hnn_x[:,0], hnn_x[:,1], 'go', label='HNN', markersize =2)
+                plt.legend(fontsize=7, loc='upper left')
+
+                #plot MSE 
+                plt.subplot(1,3,2)
+                plt.title('SE on %s' % j)
+                plt.xlabel('Time step') 
+                plt.plot(HNN_MSE, 'g--',label ='HNN SE', linewidth=0.75, markersize = 2)
+                plt.legend(fontsize=7, loc='upper left')
+
+                #plot total energy
+                plt.subplot(1,3,3)
+                plt.title('Total energy on %s' % j, pad=tpad)
+                plt.xlabel('Time step')
+                true_e = np.stack([hamiltonian_fn(c) for c in true_x])
+                hnn_e = np.stack([hamiltonian_fn(c) for c in hnn_x])
+                plt.plot(t_eval, true_e, 'k-', label='Ground truth', linewidth=1, markersize = 2)
+                plt.plot(t_eval, hnn_e, 'g--', label='HNN', linewidth=1, markersize = 2)
+                plt.legend(fontsize=7, loc='upper left')
+                
+
+                plt.tight_layout() 
+
+                #save figures 
+                trial_path = "Trial{0}".format(str(j).zfill(3))
+                plt.savefig(os.path.join(new_experiment_path, trial_path, "Trial{0}_Figures_HNN.png".format(str(j).zfill(3))))
+                plt.close()
+                
+                amp_percentage = {"Amp Percentage": amp_perc} #added 03222023
+                ground_truth = {"Predictions": true_x, "Total Energy": true_e, "Time Step": t_eval} #added 03142023
                 hnn = {"Predictions": hnn_x, "MSE": HNN_MSE, "Total Energy": hnn_e} 
                 dhnn = {"Predictions": dhnn_x, "MSE": DHNN_MSE, "Total Energy": dhnn_e} 
                 mlp = {"Predictions": mlp_x, "MSE": MLP_MSE, "Total Energy": mlp_e} 
-                trial_data = {"hnn": hnn, "dhnn": dhnn, "mlp": mlp}
+                trial_data = {"amp_percentage": amp_percentage, "ground_truth": ground_truth, "hnn": hnn, "dhnn": dhnn, "mlp": mlp}
 
                 trial_name = str(j) 
                 jth_trial = {trial_name: trial_data}
                 
                 #save data using pkl
-                
                 with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Experiment{0}/Trial{1}/Trial{2}_Data.pkl".format(str(i).zfill(3),str(j).zfill(3),str(j).zfill(3))), 'wb') as f:
                     pickle.dump(jth_trial, f)
-
+                
                 all_trials.update(jth_trial)
+                #out of loop
+                                         
+            with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Experiment.{0}.pkl".format(str(i).zfill(3))), 'wb') as f:
+                pickle.dump(all_trials, f)  
+
+            #plot the average MSE for each experiment 
+            FILES = glob.glob(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/",MAJOR_FOLDER,'Experiment.*.pkl'), recursive=True)
+            FILES.sort()
+            all_data = {}
+
+            for file in FILES:
+                i = file.split(".")[-2]
+                with open(file ,'rb') as read_file:
+                    trials = pickle.load(read_file)
+                all_data[i] = trials
+
+            for i in all_data:
                 
-                #file2 = os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Experiment.{0}.pkl".format(str(i).zfill(3)))
-                                     
-                with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Experiment.{0}.pkl".format(str(i).zfill(3))), 'wb') as f:
-                    pickle.dump(all_trials, f)
-
-                #plot the average MSE for each experiment 
-                FILES = glob.glob(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/",MAJOR_FOLDER,'Experiment.*.pkl'), recursive=True)
-                FILES.sort()
-                all_data = {}
-
-                for file in FILES:
-                    i = file.split(".")[-2]
-                    with open(file ,'rb') as read_file:
-                            rials = pickle.load(read_file)
-                    all_data[i] = trials
-
-                for i in all_data:
-                    available_js = all_data[i].keys()
-
-                    tpad = 7
-                    fig, axs = plt.subplots(2,figsize=[10,10], dpi=300)
-
-                    js = list(all_data[i].keys())
-
-                    hnn_MSE = []
-                    dhnn_MSE = []
-                    mlp_MSE = []
-
-                    for j in available_js:  
-                        mse_hnn = (np.mean(all_data[str(i)][str(j)]["hnn"]["MSE"]))
-                        hnn_MSE.append(mse_hnn)
-                        mse_dhnn = (np.mean(all_data[str(i)][str(j)]["dhnn"]["MSE"]))
-                        dhnn_MSE.append(mse_dhnn)
-                        mse_mlp = np.mean(all_data[str(i)][str(j)]["mlp"]["MSE"])                      
-                        mlp_MSE.append(mse_mlp)
-
-                    #plot
-                    #plt.subplot(1,2,1)
-                    fig.suptitle('Average MSE for Experiment %s' % i)
-                    axs[1].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
-                    axs[1].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
-                    axs[1].plot(js, mlp_MSE, '*r-', label='MLP', markersize = 8)
-                    plt.legend(fontsize=7, bbox_to_anchor=(0,0))
-                    #without MLP
-                    #plt.subplot(1,2,2) 
-                    axs[0].plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
-                    axs[0].plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
-
-
-                    for ax in axs.flat:
-                        ax.set(xlabel='Trajectory Number', ylabel='Average MSE')
-
-
-                    trial_path = "Trial{0}".format(str(j).zfill(3))
-                    plt.savefig(os.path.join(new_experiment_path, "Average_MSE_Fig.png"))
-                    plt.close()
-
+                available_js = all_data[str(i)].keys()
                 
+                js = list(all_data[str(i)].keys())
+
+                hnn_MSE = []
+                dhnn_MSE = []
+                mlp_MSE = []
+                amp_percent =[]
+
+                for j in available_js: 
+                    #print('in loop')
+                    amp_percent = all_data[str(i)][str(j)]["amp_percentage"]["Amp Percentage"]
+                    mse_hnn = (np.mean(all_data[str(i)][str(j)]["hnn"]["MSE"]))
+                    hnn_MSE.append(mse_hnn)
+                    mse_dhnn = (np.mean(all_data[str(i)][str(j)]["dhnn"]["MSE"]))
+                    dhnn_MSE.append(mse_dhnn)
+                    mse_mlp = np.mean(all_data[str(i)][str(j)]["mlp"]["MSE"])                      
+                    mlp_MSE.append(mse_mlp)
+
+                #plot w/MLP
+                tpad = 7
+                fig = plt.figure(figsize=[15,10], dpi=300)
+                plt.title('Average MSE for Experiment %s' % i, pad=tpad) 
+                plt.xlabel('Trajectory Number') 
+                plt.ylabel('Average MSE') 
+                plt.plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                plt.plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+                plt.plot(js, mlp_MSE, '*r-', label='MLP', markersize = 8)
+                plt.legend(fontsize=7, loc='upper right')
+                plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns",MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Average_Traj_MSE_W_MLP_Fig.png"))
+                plt.close()
+
+                #without MLP
+                tpad = 7
+                fig = plt.figure(figsize=[15,10], dpi=300)
+                plt.title('Average MSE for Experiment %s' % i, pad=tpad) 
+                plt.xlabel('Trajectory Number') 
+                plt.ylabel('Average MSE') 
+                plt.plot(js, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                plt.plot(js, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+                plt.legend(fontsize=7, loc='upper right')
+                trial_path = "Trial{0}".format(str(j).zfill(3))
+                plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Average_Traj_MSE_Fig.png"))
+                plt.close()
+       
+                #plot w/MLP
+                tpad = 7
+                fig = plt.figure(figsize=[15,10], dpi=300)
+                plt.title('Average MSE for Experiment %s' % i, pad=tpad) 
+                plt.xlabel('Scaled Amplitude') 
+                plt.ylabel('Average MSE') 
+                plt.plot(amp_percent, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                plt.plot(amp_percent, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+                plt.plot(amp_percent, mlp_MSE, '*r-', label='MLP', markersize = 8)
+                plt.legend(fontsize=7, loc='upper right')
+                plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Average_Scale_MSE_W_MLP_Fig.png"))
+                plt.close()
+                                        
+                #without MLP
+                tpad = 7
+                fig = plt.figure(figsize=[15,10], dpi=300) 
+                plt.title('Average MSE for Experiment %s' % i, pad=tpad) 
+                plt.xlabel('Scaled Amplitude') 
+                plt.ylabel('Average MSE') 
+                plt.plot(amp_percent, hnn_MSE, 'og-', label='HNN', markersize = 8)
+                plt.plot(amp_percent, dhnn_MSE, '^b-', label='D-HNN', markersize = 8)
+                plt.legend(fontsize=7, loc='upper right')
+                plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Average_Scale_MSE_Fig.png"))
+                plt.close()
+
+            #plot all tiral integration times per experiment
+#             tpad = 7
+#             fig = plt.figure(figsize=[10,10], dpi=300) 
+#             plt.title('Integration Time for Experiment %s' % i, pad=tpad) 
+#             plt.xlabel('Trial Number') 
+#             plt.ylabel('Time (minutes)') 
+#             plt.plot(js , integration_times, 'ok-', markersize = 8)
+#             plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Integration_Times_Fig.png"))
+#             plt.close()
+
+#             #plot all tiral integration times per experiment SCALED
+#             tpad = 7
+#             fig = plt.figure(figsize=[10,10], dpi=300) 
+#             plt.title('Integration Time for Experiment %s' % i, pad=tpad) 
+#             plt.xlabel('Trial Number') 
+#             plt.ylabel('Time (minutes)') 
+#             plt.plot(amp_percent, integration_times, 'ok-', markersize = 8)
+#             plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "Integration_Times_Scaled_Fig.png"))
+#             #plt.xlim((0.94, 1.06))
+#             plt.close()
+
+#             #plot all tiral MSE times per experiment
+#             tpad = 7
+#             fig = plt.figure(figsize=[10,10], dpi=300) 
+#             plt.title('Time to Calculate MSE for Experiemnt %s' % i, pad=tpad) 
+#             plt.xlabel('Trial Number') 
+#             plt.ylabel('Time (minutes)') 
+#             plt.plot(js, MSE_times, 'ok-', markersize = 8)
+#             plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "MSE_Times_Fig.png"))
+#             plt.close()
+
+#             #plot all tiral MSE times per experiment SCALED
+#             tpad = 7
+#             fig = plt.figure(figsize=[10,10], dpi=300) 
+#             plt.title('Time to Calculate MSE for Experiemnt %s' % i, pad=tpad) 
+#             plt.xlabel('Trial Number') 
+#             plt.ylabel('Time (minutes)') 
+#             plt.plot(amp_percent, MSE_times, 'ok-', markersize = 8)
+#             plt.savefig(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns", MAJOR_FOLDER, "Experiment{0}".format(str(i).zfill(3)), "MSE_Times_Scaled_Fig.png"))
+#             plt.close()
+                
+            #end of "if"
+            
+        experiment_time.append((time.time() - experiment_start_time)/60)
+        experiment_is.append(i)
+        print("--- %d minutes --- to complete experiemnt" % ((time.time() - experiment_start_time)/60))
+        
+        #out of "each experiment" loop
+     
+    #save training time data using pkl
+    with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Train_Time.pkl"), 'wb') as f:
+        pickle.dump(training_time, f)
+
+    with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "Train_Js_Time.pkl"), 'wb') as f:
+        pickle.dump(training_js, f)
+
+    #save experiment time data using pkl
+    with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "EXP_Time.pkl"), 'wb') as f:
+        pickle.dump(experiment_time, f)
+
+    with open(os.path.join("/global/cfs/cdirs/m3792/mmeitz/dissipative_hnns/", MAJOR_FOLDER, "EXP_Is_Time.pkl"), 'wb') as f:
+        pickle.dump(experiment_is, f) 
+    
     end = time.time()
-    print("Time to complete: %s minutes" % ((end-main_start_time)/60), flush = True)
+    print("Time to complete all experiemtns within the certrain range chosen: %d minutes" % ((end-main_start_time)/60), flush = True)
+         
         
 if __name__ == '__main__':
     print("START", flush = True)
     FILE = 'Trajectories400.hdf5'
-    MAJOR_FOLDER = "03012023"                           
+    MAJOR_FOLDER = "04272023-2"                           
     main(MAJOR_FOLDER, FILE)
     print("DONE!!!", flush = True)
     

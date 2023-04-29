@@ -11,7 +11,7 @@ def get_AMP(data):
     for i in range(len(data)): #first loop goes into each trajecotry "sheet"
         dist2=[]
         for j in range(len(data[i])):#second loop goes into seach trajectory "row" which holds an (x,y)
-            temp = np.sqrt((data[i, 0]) ** 2 + (data[i, 1]) ** 2) #distance from the origin to the point 
+            temp = np.sqrt((data[i,j,0]) ** 2 + (data[i,j,1]) ** 2) #distance from the origin to the point 
             dist2.append(temp)
             Amp = np.mean(dist2)
         dist.append(Amp)
@@ -29,13 +29,26 @@ def get_scale(dist, i):
     return scale
 
 #to search amp array and find the scaling trajectories
-def find_amp_index(scale_amp, perc):
+def find_amp_index(scale_amp, i):
+    perc = [0.9, 0.95,1.05, 1.10]
     amp_index = []
-    for k in range(len(scale_amp)): #k is the index for the amplitude we want to use 
-        if scale_amp[k] in perc:
-            print(k, scale_amp[k])
-            amp_index.append(k)
-    return amp_index #returns the amplidue array index 
+    print(i)
+    amp_perc = []
+    for p in perc:
+        for k in range(len(scale_amp)): #k is the index for the amplitude we want to use 
+            if scale_amp[k] == p: #or k == i: 
+                print(k, scale_amp[k])
+                amp_index.append(k)
+                amp_perc.append(p)
+                break
+ 
+            if k == i: 
+                if k not in amp_index: 
+                    print(k, scale_amp[k])
+                    amp_index.append(k)
+                    amp_perc.append(1)
+            
+    return amp_index, amp_perc #returns the amplidue array index 
 
 
 def integrate_model(model, t_span, y0, **kwargs):
