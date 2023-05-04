@@ -65,17 +65,17 @@ def get_true_pred(data_true, data_pred):
     NEWdist = []
     MSE = []
     index_pred = []
-    for k in range(0,len(data_true)): #giant loop to calculate distance 
+    for k in range(len(data_true)): #giant loop to calculate distance 
         dist = []
         dist2 = []
-        for i in range(0, len(data_pred)): #calculating the euclidian distance between A TRUE pt and ALL prediction pts
+        for i in range(len(data_pred)): #calculating the euclidian distance between A TRUE pt and ALL prediction pts
             temp = np.sqrt(((data_true.iloc[k, 0] - data_pred.iloc[i, 0]) ** 2) + ((data_true.iloc[k, 1] - data_pred.iloc[i, 1]) **2)) #euclidean dist
-            temp2 = ((data_true.iloc[k, 0] - data_pred.iloc[i, 0]) ** 2) + ((data_true.iloc[k, 1] - data_pred.iloc[i, 1]) **2)#similar to L2 norm, MSE (not sqrt)
+            temp2 = ((data_true.iloc[k, 0] - data_pred.iloc[i, 0]) ** 2) + ((data_true.iloc[k, 1] - data_pred.iloc[i, 1]) **2)#similar to L2 norm, SE (not sqrt)
             dist.append(temp) #appaned and make array of all calculated distances
             dist2.append(temp2)
         #out of for loop 
         dist = np.array(dist)
-        dsit2 = np.array(dist2)
+        dist2 = np.array(dist2)
         index_dist = np.argsort(dist)
         dist.sort() #next, pick which distance is the smallest from the "dist" array
         dist2.sort()
