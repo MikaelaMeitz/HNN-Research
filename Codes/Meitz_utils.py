@@ -74,13 +74,13 @@ def get_true_pred(data_true, data_pred):
             dist.append(temp) #appaned and make array of all calculated distances
             dist2.append(temp2)
         #out of for loop 
-        dist = np.array(dist)
-        dist2 = np.array(dist2)
+        dist_new = np.array(dist)
+        dist2_new = np.array(dist2)
         index_dist = np.argsort(dist)
-        dist.sort() #next, pick which distance is the smallest from the "dist" array
-        dist2.sort()
-        NEWdist.append(dist[0]) #append "smallest value" to list every loop 
-        MSE.append(dist2[0])
+        dist_new.sort() #next, pick which distance is the smallest from the "dist" array
+        dist2_new.sort()
+        NEWdist.append(dist_new[0]) #append "smallest value" to list every loop 
+        MSE.append(dist2_new[0])
         index_pred.append(data_pred.iloc[index_dist[0]])
     #out of big loop
     index_pred = np.array(index_pred)
